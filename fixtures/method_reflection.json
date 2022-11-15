@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/invopop/jsonschema/method-test",
+  "$ref": "#/$defs/MethodTest",
+  "$defs": {
+    "Bytes": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "package": "github.com/invopop/jsonschema",
+      "name": "Bytes"
+    },
+    "Inner": {
+      "properties": {
+        "Foo": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "Foo"
+      ],
+      "package": "github.com/invopop/jsonschema",
+      "name": "Inner"
+    },
+    "MethodTest": {
+      "properties": {
+        "Field": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "Field"
+      ],
+      "methods": {
+        "ArgsAndReturn": {
+          "pointer": true,
+          "in": [
+            {
+              "items": {
+                "type": "string",
+                "pointer": true
+              },
+              "type": "array"
+            },
+            {
+              "items": true,
+              "type": "array"
+            }
+          ],
+          "out": [
+            {
+              "$ref": "#/$defs/Bytes"
+            },
+            {
+              "$ref": "#/$defs/MinValue",
+              "pointer": true
+            }
+          ]
+        },
+        "ComplexArguments": {
+          "pointer": true,
+          "in": [
+            {
+              "items": {
+                "$ref": "#/$defs/Inner"
+              },
+              "type": "array"
+            },
+            {
+              "patternProperties": {
+                ".*": {
+                  "$ref": "#/$defs/MinValue"
+                }
+              },
+              "type": "object"
+            },
+            {
+              "$ref": "#/$defs/OuterPtr",
+              "pointer": true
+            }
+          ]
+        },
+        "MultiReturn": {
+          "pointer": true,
+          "out": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean",
+              "pointer": true
+            },
+            {
+              "name": "error"
+            }
+          ]
+        },
+        "SimpleArguments": {
+          "pointer": true,
+          "in": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "package": "github.com/invopop/jsonschema",
+              "name": "Text"
+            },
+            true
+          ]
+        },
+        "SimpleMethod": {},
+        "SingleReturn": {
+          "out": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "VariadicArguments": {
+          "pointer": true,
+          "variadic": true,
+          "in": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "package": "github.com/invopop/jsonschema",
+      "name": "MethodTest"
+    },
+    "MinValue": {
+      "properties": {
+        "value4": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "type": "object",
+      "required": [
+        "value4"
+      ],
+      "package": "github.com/invopop/jsonschema",
+      "name": "MinValue"
+    },
+    "OuterPtr": {
+      "properties": {
+        "Foo": {
+          "type": "string"
+        },
+        "Text": {
+          "type": "string",
+          "package": "github.com/invopop/jsonschema",
+          "name": "Text"
+        }
+      },
+      "type": "object",
+      "required": [
+        "Foo"
+      ],
+      "package": "github.com/invopop/jsonschema",
+      "name": "OuterPtr"
+    }
+  },
+  "pointer": true
+}

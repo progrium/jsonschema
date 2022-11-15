@@ -92,6 +92,19 @@ type Schema struct {
 
 	// Special boolean representation of the Schema - section 4.3.2
 	boolean *bool
+
+	// non-standard keywords
+	Methods *orderedmap.OrderedMap `json:"methods,omitempty"`
+	Pointer bool                   `json:"pointer,omitempty"`
+	Package string                 `json:"package,omitempty"`
+	Name    string                 `json:"name,omitempty"`
+}
+
+type Method struct {
+	Pointer  bool      `json:"pointer,omitempty"`
+	Variadic bool      `json:"variadic,omitempty"`
+	In       []*Schema `json:"in,omitempty"`
+	Out      []*Schema `json:"out,omitempty"`
 }
 
 var (
@@ -223,6 +236,18 @@ type Reflector struct {
 	//
 	// See also: AddGoComments
 	CommentMap map[string]string
+
+	// AnnotatePointers will mark schema references as pointers if a pointer was used in Go.
+	AnnotatePointers bool
+
+	// AnnotatePackages will add Go package info to named types.
+	AnnotatePackages bool
+
+	// AnnotateNames will set the Name for a schema if it is a named defined type in Go.
+	AnnotateNames bool
+
+	// AnnotateMethods will set the Methods for schemas based on structs with methods.
+	AnnotateMethods bool
 }
 
 // Reflect reflects to Schema from a value.
@@ -232,7 +257,9 @@ func (r *Reflector) Reflect(v interface{}) *Schema {
 
 // ReflectFromType generates root schema
 func (r *Reflector) ReflectFromType(t reflect.Type) *Schema {
+	ptr := false
 	if t.Kind() == reflect.Ptr {
+		ptr = true
 		t = t.Elem() // re-assign from pointer
 	}
 
@@ -241,7 +268,7 @@ func (r *Reflector) ReflectFromType(t reflect.Type) *Schema {
 	s := new(Schema)
 	definitions := Definitions{}
 	s.Definitions = definitions
-	bs := r.reflectTypeToSchemaWithID(definitions, t)
+	bs := r.reflectTypeToSchemaWithID(definitions, t, ptr)
 	if r.ExpandedStruct {
 		*s = *definitions[name]
 		delete(definitions, name)
@@ -304,24 +331,28 @@ func (r *Reflector) SetBaseSchemaID(id string) {
 	r.BaseSchemaID = ID(id)
 }
 
-func (r *Reflector) refOrReflectTypeToSchema(definitions Definitions, t reflect.Type) *Schema {
+func (r *Reflector) refOrReflectTypeToSchema(definitions Definitions, t reflect.Type, ptr bool) *Schema {
 	id := r.lookupID(t)
 	if id != EmptyID {
 		return &Schema{
-			Ref: id.String(),
+			Ref:     id.String(),
+			Pointer: ptr && r.AnnotatePointers,
 		}
 	}
 
 	// Already added to definitions?
-	if def := r.refDefinition(definitions, t); def != nil {
+	if def := r.refDefinition(definitions, t, ptr); def != nil {
 		return def
 	}
 
-	return r.reflectTypeToSchemaWithID(definitions, t)
+	s := r.reflectTypeToSchemaWithID(definitions, t, ptr)
+	s.Pointer = ptr && r.AnnotatePointers
+	return s
 }
 
-func (r *Reflector) reflectTypeToSchemaWithID(defs Definitions, t reflect.Type) *Schema {
+func (r *Reflector) reflectTypeToSchemaWithID(defs Definitions, t reflect.Type, ptr bool) *Schema {
 	s := r.reflectTypeToSchema(defs, t)
+	s.Pointer = ptr && r.AnnotatePointers
 	if s != nil {
 		if r.Lookup != nil {
 			id := r.Lookup(t)
@@ -336,7 +367,7 @@ func (r *Reflector) reflectTypeToSchemaWithID(defs Definitions, t reflect.Type) 
 func (r *Reflector) reflectTypeToSchema(definitions Definitions, t reflect.Type) *Schema {
 	// only try to reflect non-pointers
 	if t.Kind() == reflect.Ptr {
-		return r.refOrReflectTypeToSchema(definitions, t.Elem())
+		return r.refOrReflectTypeToSchema(definitions, t.Elem(), true)
 	}
 
 	// Do any pre-definitions exist?
@@ -351,6 +382,12 @@ func (r *Reflector) reflectTypeToSchema(definitions Definitions, t reflect.Type)
 
 	// Prepare a base to which details can be added
 	st := new(Schema)
+	if r.AnnotatePackages && t.PkgPath() != "" {
+		st.Package = t.PkgPath()
+	}
+	if r.AnnotateNames && t.Name() != "" && (t.PkgPath() != "" || t.Name() == "error") {
+		st.Name = t.Name()
+	}
 
 	// jsonpb will marshal protobuf enum options as either strings or integers.
 	// It will unmarshal either.
@@ -405,7 +442,7 @@ func (r *Reflector) reflectTypeToSchema(definitions Definitions, t reflect.Type)
 	r.reflectSchemaExtend(definitions, t, st)
 
 	// Always try to reference the definition which may have just been created
-	if def := r.refDefinition(definitions, t); def != nil {
+	if def := r.refDefinition(definitions, t, false); def != nil {
 		return def
 	}
 
@@ -422,7 +459,7 @@ func (r *Reflector) reflectCustomSchema(definitions Definitions, t reflect.Type)
 		o := v.Interface().(customSchemaImpl)
 		st := o.JSONSchema()
 		r.addDefinition(definitions, t, st)
-		if ref := r.refDefinition(definitions, t); ref != nil {
+		if ref := r.refDefinition(definitions, t, false); ref != nil {
 			return ref
 		}
 		return st
@@ -436,7 +473,7 @@ func (r *Reflector) reflectSchemaExtend(definitions Definitions, t reflect.Type,
 		v := reflect.New(t)
 		o := v.Interface().(extendSchemaImpl)
 		o.JSONSchemaExtend(s)
-		if ref := r.refDefinition(definitions, t); ref != nil {
+		if ref := r.refDefinition(definitions, t, false); ref != nil {
 			return ref
 		}
 	}
@@ -465,7 +502,7 @@ func (r *Reflector) reflectSliceOrArray(definitions Definitions, t reflect.Type,
 		st.ContentEncoding = "base64"
 	} else {
 		st.Type = "array"
-		st.Items = r.refOrReflectTypeToSchema(definitions, t.Elem())
+		st.Items = r.refOrReflectTypeToSchema(definitions, t.Elem(), t.Elem().Kind() == reflect.Pointer)
 	}
 }
 
@@ -480,14 +517,14 @@ func (r *Reflector) reflectMap(definitions Definitions, t reflect.Type, st *Sche
 	switch t.Key().Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		st.PatternProperties = map[string]*Schema{
-			"^[0-9]+$": r.refOrReflectTypeToSchema(definitions, t.Elem()),
+			"^[0-9]+$": r.refOrReflectTypeToSchema(definitions, t.Elem(), t.Elem().Kind() == reflect.Pointer),
 		}
 		st.AdditionalProperties = FalseSchema
 		return
 	}
 	if t.Elem().Kind() != reflect.Interface {
 		st.PatternProperties = map[string]*Schema{
-			".*": r.refOrReflectTypeToSchema(definitions, t.Elem()),
+			".*": r.refOrReflectTypeToSchema(definitions, t.Elem(), t.Elem().Kind() == reflect.Pointer),
 		}
 	}
 }
@@ -526,7 +563,54 @@ func (r *Reflector) reflectStruct(definitions Definitions, t reflect.Type, s *Sc
 	}
 	if !ignored {
 		r.reflectStructFields(s, definitions, t)
+		if r.AnnotateMethods {
+			r.reflectStructMethods(s, definitions, t)
+		}
 	}
+}
+
+func (r *Reflector) reflectStructMethods(s *Schema, definitions Definitions, t reflect.Type) {
+	// if t.Kind() == reflect.Ptr {
+	// 	t = t.Elem()
+	// }
+	if t.Kind() != reflect.Struct {
+		return
+	}
+	pt := reflect.PointerTo(t)
+	if t.NumMethod() == 0 && pt.NumMethod() == 0 {
+		return
+	}
+	s.Methods = orderedmap.New()
+	for i := 0; i < pt.NumMethod(); i++ {
+		r.reflectStructMethod(s, definitions, t, pt.Method(i), true)
+	}
+	for i := 0; i < t.NumMethod(); i++ {
+		r.reflectStructMethod(s, definitions, t, t.Method(i), false)
+	}
+	if len(s.Methods.Keys()) == 0 {
+		s.Methods = nil
+	}
+}
+
+func (r *Reflector) reflectStructMethod(s *Schema, definitions Definitions, t reflect.Type, m reflect.Method, ptrRcvr bool) {
+	for _, ignore := range []string{"GetFieldDocString", "JSONSchemaExtend"} {
+		if m.Name == ignore {
+			return
+		}
+	}
+	method := Method{Pointer: ptrRcvr}
+	if m.Type.IsVariadic() {
+		method.Variadic = true
+	}
+	for i := 1; /* skip receiver */ i < m.Type.NumIn(); i++ {
+		arg := r.reflectTypeToSchema(definitions, m.Type.In(i))
+		method.In = append(method.In, arg)
+	}
+	for i := 0; i < m.Type.NumOut(); i++ {
+		arg := r.reflectTypeToSchema(definitions, m.Type.Out(i))
+		method.Out = append(method.Out, arg)
+	}
+	s.Methods.Set(m.Name, method)
 }
 
 func (r *Reflector) reflectStructFields(st *Schema, definitions Definitions, t reflect.Type) {
@@ -555,7 +639,7 @@ func (r *Reflector) reflectStructFields(st *Schema, definitions Definitions, t r
 			return
 		}
 
-		property := r.refOrReflectTypeToSchema(definitions, f.Type)
+		property := r.refOrReflectTypeToSchema(definitions, f.Type, false) // TODO: can be true!
 		property.structKeywordsFromTags(f, st, name)
 		if property.Description == "" {
 			property.Description = r.lookupComment(t, f.Name)
@@ -626,7 +710,7 @@ func (r *Reflector) addDefinition(definitions Definitions, t reflect.Type, s *Sc
 }
 
 // refDefinition will provide a schema with a reference to an existing definition.
-func (r *Reflector) refDefinition(definitions Definitions, t reflect.Type) *Schema {
+func (r *Reflector) refDefinition(definitions Definitions, t reflect.Type, ptr bool) *Schema {
 	if r.DoNotReference {
 		return nil
 	}
@@ -638,7 +722,8 @@ func (r *Reflector) refDefinition(definitions Definitions, t reflect.Type) *Sche
 		return nil
 	}
 	return &Schema{
-		Ref: "#/$defs/" + name,
+		Ref:     "#/$defs/" + name,
+		Pointer: ptr && r.AnnotatePointers,
 	}
 }
 

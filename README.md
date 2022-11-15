@@ -6,7 +6,7 @@
 [![GoDoc](https://godoc.org/github.com/invopop/jsonschema?status.svg)](https://godoc.org/github.com/invopop/jsonschema)
 ![Latest Tag](https://img.shields.io/github/v/tag/invopop/jsonschema)
 
-*This fork adds a non-standard keyword "methods" to the generated schema that reflects struct methods. -progrium*
+*This fork adds non-standard keywords "methods", "package", "pointer", and "name" to schemas to reflect enough Go type information to generate Go code from schemas. They are all togglable via the Annotation fields on Reflector. -progrium*
 
 This package can be used to generate [JSON Schemas](http://json-schema.org/latest/json-schema-validation.html) from Go types through reflection.
 
