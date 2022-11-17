@@ -15,7 +15,7 @@ import (
 
 	"github.com/iancoleman/orderedmap"
 
-	"github.com/invopop/jsonschema/examples"
+	"github.com/progrium/jsonschema/examples"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
