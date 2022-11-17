@@ -420,7 +420,9 @@ func (r *Reflector) reflectTypeToSchema(definitions Definitions, t reflect.Type)
 		r.reflectMap(definitions, t, st)
 
 	case reflect.Interface:
-		// empty
+		if r.AnnotateMethods {
+			r.reflectInterfaceMethods(st, definitions, t)
+		}
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -569,6 +571,19 @@ func (r *Reflector) reflectStruct(definitions Definitions, t reflect.Type, s *Sc
 	}
 }
 
+func (r *Reflector) reflectInterfaceMethods(s *Schema, definitions Definitions, t reflect.Type) {
+	if t.NumMethod() == 0 {
+		return
+	}
+	s.Methods = orderedmap.New()
+	for i := 0; i < t.NumMethod(); i++ {
+		r.reflectMethod(s, definitions, t, t.Method(i), true)
+	}
+	if len(s.Methods.Keys()) == 0 {
+		s.Methods = nil
+	}
+}
+
 func (r *Reflector) reflectStructMethods(s *Schema, definitions Definitions, t reflect.Type) {
 	// if t.Kind() == reflect.Ptr {
 	// 	t = t.Elem()
@@ -582,17 +597,17 @@ func (r *Reflector) reflectStructMethods(s *Schema, definitions Definitions, t r
 	}
 	s.Methods = orderedmap.New()
 	for i := 0; i < pt.NumMethod(); i++ {
-		r.reflectStructMethod(s, definitions, t, pt.Method(i), true)
+		r.reflectMethod(s, definitions, t, pt.Method(i), true)
 	}
 	for i := 0; i < t.NumMethod(); i++ {
-		r.reflectStructMethod(s, definitions, t, t.Method(i), false)
+		r.reflectMethod(s, definitions, t, t.Method(i), false)
 	}
 	if len(s.Methods.Keys()) == 0 {
 		s.Methods = nil
 	}
 }
 
-func (r *Reflector) reflectStructMethod(s *Schema, definitions Definitions, t reflect.Type, m reflect.Method, ptrRcvr bool) {
+func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.Type, m reflect.Method, ptrRcvr bool) {
 	for _, ignore := range []string{"GetFieldDocString", "JSONSchemaExtend"} {
 		if m.Name == ignore {
 			return
