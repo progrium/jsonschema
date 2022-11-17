@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/invopop/jsonschema"
+	"github.com/progrium/jsonschema"
 )
 
 type Method struct {
