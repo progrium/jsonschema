@@ -118,7 +118,7 @@ func (t Type) IsVariadic() bool {
 }
 
 func (t Type) NumMethod() int {
-	return len(t.schema.Methods.Keys())
+	return len(t.schema.Methods)
 }
 
 func (t Type) NumIn() int {
@@ -143,22 +143,21 @@ func (t Type) NumField() int {
 }
 
 func (t Type) Method(i int) Method {
-	name := t.schema.Methods.Keys()[i]
-	m, _ := t.MethodByName(name)
-	return m
+	m := t.schema.Methods[i]
+	tt := typeFrom(t, indirect(t.schema))
+	tt.method = &m
+	return Method{
+		Name:    m.Name,
+		PkgPath: t.schema.Package,
+		Type:    tt,
+	}
 }
 
 func (t Type) MethodByName(name string) (Method, bool) {
-	s, ok := t.schema.Methods.Get(name)
-	if ok {
-		tt := typeFrom(t, indirect(t.schema))
-		m := s.(jsonschema.Method)
-		tt.method = &m
-		return Method{
-			Name:    name,
-			PkgPath: t.schema.Package,
-			Type:    tt,
-		}, true
+	for idx, m := range t.schema.Methods {
+		if m.Name == name {
+			return t.Method(idx), true
+		}
 	}
 	return Method{}, false
 }

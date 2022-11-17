@@ -2,6 +2,7 @@ package reflected
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/progrium/jsonschema"
@@ -54,7 +55,7 @@ func TestReflected(t *testing.T) {
 		AnnotateNames:             true,
 		AllowAdditionalProperties: true,
 	}
-	schema := r.Reflect(rt)
+	schema := r.ReflectFromType(reflect.TypeOf(rt).Elem().Field(2).Type)
 	tt := TypeOf(schema)
 	for i := 0; i < tt.NumMethod(); i++ {
 		m := tt.Method(i)
@@ -68,5 +69,5 @@ func TestReflected(t *testing.T) {
 		}
 		fmt.Println(m.Name, args, rets)
 	}
-	fmt.Println(tt.Field(2).Type.NumMethod())
+	//fmt.Println(tt.Field(2).Type.NumMethod())
 }

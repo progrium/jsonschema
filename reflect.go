@@ -94,13 +94,14 @@ type Schema struct {
 	boolean *bool
 
 	// non-standard keywords
-	Methods *orderedmap.OrderedMap `json:"methods,omitempty"`
-	Pointer bool                   `json:"pointer,omitempty"`
-	Package string                 `json:"package,omitempty"`
-	Name    string                 `json:"name,omitempty"`
+	Methods []Method `json:"methods,omitempty"`
+	Pointer bool     `json:"pointer,omitempty"`
+	Package string   `json:"package,omitempty"`
+	Name    string   `json:"name,omitempty"`
 }
 
 type Method struct {
+	Name     string    `json:"string,omitempty"`
 	Pointer  bool      `json:"pointer,omitempty"`
 	Variadic bool      `json:"variadic,omitempty"`
 	In       []*Schema `json:"in,omitempty"`
@@ -153,9 +154,9 @@ func ReflectFromType(t reflect.Type) *Schema {
 // A Reflector reflects values into a Schema.
 type Reflector struct {
 	// BaseSchemaID defines the URI that will be used as a base to determine Schema
-	// IDs for models. For example, a base Schema ID of `https://invopop.com/schemas`
+	// IDs for models. For example, a base Schema ID of `https://progrium.com/schemas`
 	// when defined with a struct called `User{}`, will result in a schema with an
-	// ID set to `https://invopop.com/schemas/user`.
+	// ID set to `https://progrium.com/schemas/user`.
 	//
 	// If no `BaseSchemaID` is provided, we'll take the type's complete package path
 	// and use that as a base instead. Set `Anonymous` to try if you do not want to
@@ -228,11 +229,11 @@ type Reflector struct {
 	//
 	// Type descriptions should be defined like:
 	//
-	//   map[string]string{"github.com/invopop/jsonschema.Reflector": "A Reflector reflects values into a Schema."}
+	//   map[string]string{"github.com/progrium/jsonschema.Reflector": "A Reflector reflects values into a Schema."}
 	//
 	// And Fields defined as:
 	//
-	//   map[string]string{"github.com/invopop/jsonschema.Reflector.DoNotReference": "Do not reference definitions."}
+	//   map[string]string{"github.com/progrium/jsonschema.Reflector.DoNotReference": "Do not reference definitions."}
 	//
 	// See also: AddGoComments
 	CommentMap map[string]string
@@ -575,12 +576,8 @@ func (r *Reflector) reflectInterfaceMethods(s *Schema, definitions Definitions, 
 	if t.NumMethod() == 0 {
 		return
 	}
-	s.Methods = orderedmap.New()
 	for i := 0; i < t.NumMethod(); i++ {
 		r.reflectMethod(s, definitions, t, t.Method(i), true)
-	}
-	if len(s.Methods.Keys()) == 0 {
-		s.Methods = nil
 	}
 }
 
@@ -595,15 +592,11 @@ func (r *Reflector) reflectStructMethods(s *Schema, definitions Definitions, t r
 	if t.NumMethod() == 0 && pt.NumMethod() == 0 {
 		return
 	}
-	s.Methods = orderedmap.New()
 	for i := 0; i < pt.NumMethod(); i++ {
 		r.reflectMethod(s, definitions, t, pt.Method(i), true)
 	}
 	for i := 0; i < t.NumMethod(); i++ {
 		r.reflectMethod(s, definitions, t, t.Method(i), false)
-	}
-	if len(s.Methods.Keys()) == 0 {
-		s.Methods = nil
 	}
 }
 
@@ -613,7 +606,7 @@ func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.
 			return
 		}
 	}
-	method := Method{Pointer: ptrRcvr}
+	method := Method{Name: m.Name, Pointer: ptrRcvr}
 	if m.Type.IsVariadic() {
 		method.Variadic = true
 	}
@@ -625,7 +618,7 @@ func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.
 		arg := r.reflectTypeToSchema(definitions, m.Type.Out(i))
 		method.Out = append(method.Out, arg)
 	}
-	s.Methods.Set(m.Name, method)
+	s.Methods = append(s.Methods, method)
 }
 
 func (r *Reflector) reflectStructFields(st *Schema, definitions Definitions, t reflect.Type) {

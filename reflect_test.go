@@ -346,7 +346,7 @@ func TestReflectFromType(t *testing.T) {
 	typ := reflect.TypeOf(tu)
 
 	s := r.ReflectFromType(typ)
-	assert.EqualValues(t, "https://github.com/invopop/jsonschema/test-user", s.ID)
+	assert.EqualValues(t, "https://github.com/progrium/jsonschema/test-user", s.ID)
 
 	// TODO: figure out what to do with this
 	// x := struct {
@@ -481,7 +481,7 @@ func TestSchemaGeneration(t *testing.T) {
 func prepareCommentReflector(t *testing.T) *Reflector {
 	t.Helper()
 	r := new(Reflector)
-	err := r.AddGoComments("github.com/invopop/jsonschema", "./examples")
+	err := r.AddGoComments("github.com/progrium/jsonschema", "./examples")
 	require.NoError(t, err, "did not expect error while adding comments")
 	return r
 }
