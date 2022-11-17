@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/invopop/jsonschema/method-test",
+  "$id": "https://github.com/progrium/jsonschema/method-test",
   "$ref": "#/$defs/MethodTest",
   "$defs": {
     "Bytes": {
       "type": "string",
       "contentEncoding": "base64",
-      "package": "github.com/invopop/jsonschema",
+      "package": "github.com/progrium/jsonschema",
       "name": "Bytes"
     },
     "Inner": {
@@ -19,7 +19,7 @@
       "required": [
         "Foo"
       ],
-      "package": "github.com/invopop/jsonschema",
+      "package": "github.com/progrium/jsonschema",
       "name": "Inner"
     },
     "MethodTest": {
@@ -32,8 +32,9 @@
       "required": [
         "Field"
       ],
-      "methods": {
-        "ArgsAndReturn": {
+      "methods": [
+        {
+          "string": "ArgsAndReturn",
           "pointer": true,
           "in": [
             {
@@ -58,7 +59,8 @@
             }
           ]
         },
-        "ComplexArguments": {
+        {
+          "string": "ComplexArguments",
           "pointer": true,
           "in": [
             {
@@ -81,7 +83,8 @@
             }
           ]
         },
-        "MultiReturn": {
+        {
+          "string": "MultiReturn",
           "pointer": true,
           "out": [
             {
@@ -92,11 +95,23 @@
               "pointer": true
             },
             {
+              "methods": [
+                {
+                  "string": "Error",
+                  "pointer": true,
+                  "out": [
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              ],
               "name": "error"
             }
           ]
         },
-        "SimpleArguments": {
+        {
+          "string": "SimpleArguments",
           "pointer": true,
           "in": [
             {
@@ -110,21 +125,27 @@
             },
             {
               "type": "string",
-              "package": "github.com/invopop/jsonschema",
+              "package": "github.com/progrium/jsonschema",
               "name": "Text"
             },
             true
           ]
         },
-        "SimpleMethod": {},
-        "SingleReturn": {
+        {
+          "string": "SimpleMethod",
+          "pointer": true
+        },
+        {
+          "string": "SingleReturn",
+          "pointer": true,
           "out": [
             {
               "type": "string"
             }
           ]
         },
-        "VariadicArguments": {
+        {
+          "string": "VariadicArguments",
           "pointer": true,
           "variadic": true,
           "in": [
@@ -138,9 +159,20 @@
               "type": "array"
             }
           ]
+        },
+        {
+          "string": "SimpleMethod"
+        },
+        {
+          "string": "SingleReturn",
+          "out": [
+            {
+              "type": "string"
+            }
+          ]
         }
-      },
-      "package": "github.com/invopop/jsonschema",
+      ],
+      "package": "github.com/progrium/jsonschema",
       "name": "MethodTest"
     },
     "MinValue": {
@@ -154,7 +186,7 @@
       "required": [
         "value4"
       ],
-      "package": "github.com/invopop/jsonschema",
+      "package": "github.com/progrium/jsonschema",
       "name": "MinValue"
     },
     "OuterPtr": {
@@ -164,7 +196,7 @@
         },
         "Text": {
           "type": "string",
-          "package": "github.com/invopop/jsonschema",
+          "package": "github.com/progrium/jsonschema",
           "name": "Text"
         }
       },
@@ -172,7 +204,7 @@
       "required": [
         "Foo"
       ],
-      "package": "github.com/invopop/jsonschema",
+      "package": "github.com/progrium/jsonschema",
       "name": "OuterPtr"
     }
   },
