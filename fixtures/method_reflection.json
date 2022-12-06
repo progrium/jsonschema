@@ -26,11 +26,32 @@
       "properties": {
         "Field": {
           "type": "string"
+        },
+        "Interface": {
+          "methods": [
+            {
+              "string": "Do",
+              "pointer": true,
+              "in": [
+                {
+                  "type": "string"
+                }
+              ],
+              "out": [
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "package": "github.com/progrium/jsonschema",
+          "name": "InterfaceTest"
         }
       },
       "type": "object",
       "required": [
-        "Field"
+        "Field",
+        "Interface"
       ],
       "methods": [
         {

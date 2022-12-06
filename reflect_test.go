@@ -547,8 +547,13 @@ func TestArrayFormat(t *testing.T) {
 	require.Equal(t, pt, "uri")
 }
 
+type InterfaceTest interface {
+	Do(string) string
+}
+
 type MethodTest struct {
-	Field string
+	Field     string
+	Interface InterfaceTest
 }
 
 func (mt MethodTest) SimpleMethod() {}

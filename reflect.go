@@ -577,7 +577,7 @@ func (r *Reflector) reflectInterfaceMethods(s *Schema, definitions Definitions, 
 		return
 	}
 	for i := 0; i < t.NumMethod(); i++ {
-		r.reflectMethod(s, definitions, t, t.Method(i), true)
+		r.reflectMethod(s, definitions, t, t.Method(i), true, true)
 	}
 }
 
@@ -593,14 +593,14 @@ func (r *Reflector) reflectStructMethods(s *Schema, definitions Definitions, t r
 		return
 	}
 	for i := 0; i < pt.NumMethod(); i++ {
-		r.reflectMethod(s, definitions, t, pt.Method(i), true)
+		r.reflectMethod(s, definitions, t, pt.Method(i), true, false)
 	}
 	for i := 0; i < t.NumMethod(); i++ {
-		r.reflectMethod(s, definitions, t, t.Method(i), false)
+		r.reflectMethod(s, definitions, t, t.Method(i), false, false)
 	}
 }
 
-func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.Type, m reflect.Method, ptrRcvr bool) {
+func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.Type, m reflect.Method, ptrRcvr, iface bool) {
 	for _, ignore := range []string{"GetFieldDocString", "JSONSchemaExtend"} {
 		if m.Name == ignore {
 			return
@@ -610,7 +610,11 @@ func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.
 	if m.Type.IsVariadic() {
 		method.Variadic = true
 	}
-	for i := 1; /* skip receiver */ i < m.Type.NumIn(); i++ {
+	start := 1 // skip receiver
+	if iface {
+		start = 0 // no receiver on interfaces
+	}
+	for i := start; i < m.Type.NumIn(); i++ {
 		arg := r.reflectTypeToSchema(definitions, m.Type.In(i))
 		method.In = append(method.In, arg)
 	}
