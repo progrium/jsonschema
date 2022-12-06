@@ -9,6 +9,59 @@
       "package": "github.com/progrium/jsonschema",
       "name": "Bytes"
     },
+    "Context": {
+      "methods": [
+        {
+          "type": "go:func",
+          "pointer": true,
+          "name": "Deadline",
+          "out": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "package": "time",
+              "name": "Time"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        {
+          "type": "go:func",
+          "pointer": true,
+          "name": "Done",
+          "out": [
+            {
+              "type": "go:\u003c-chan struct {}"
+            }
+          ]
+        },
+        {
+          "type": "go:func",
+          "pointer": true,
+          "name": "Err",
+          "out": [
+            {
+              "$ref": "#/$defs/error"
+            }
+          ]
+        },
+        {
+          "type": "go:func",
+          "pointer": true,
+          "name": "Value",
+          "in": [
+            true
+          ],
+          "out": [
+            true
+          ]
+        }
+      ],
+      "package": "context",
+      "name": "Context"
+    },
     "Inner": {
       "properties": {
         "Foo": {
@@ -22,41 +75,60 @@
       "package": "github.com/progrium/jsonschema",
       "name": "Inner"
     },
+    "InterfaceTest": {
+      "methods": [
+        {
+          "type": "go:func",
+          "pointer": true,
+          "name": "Do",
+          "in": [
+            {
+              "$ref": "#/$defs/Context"
+            }
+          ],
+          "out": [
+            {
+              "type": "string"
+            }
+          ]
+        }
+      ],
+      "package": "github.com/progrium/jsonschema",
+      "name": "InterfaceTest"
+    },
     "MethodTest": {
       "properties": {
         "Field": {
           "type": "string"
         },
         "Interface": {
-          "methods": [
+          "$ref": "#/$defs/InterfaceTest"
+        },
+        "Func": {
+          "type": "go:func",
+          "in": [
             {
-              "string": "Do",
-              "pointer": true,
-              "in": [
-                {
-                  "type": "string"
-                }
-              ],
-              "out": [
-                {
-                  "type": "string"
-                }
-              ]
+              "type": "string"
             }
           ],
-          "package": "github.com/progrium/jsonschema",
-          "name": "InterfaceTest"
+          "out": [
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "type": "object",
       "required": [
         "Field",
-        "Interface"
+        "Interface",
+        "Func"
       ],
       "methods": [
         {
-          "string": "ArgsAndReturn",
+          "type": "go:func",
           "pointer": true,
+          "name": "ArgsAndReturn",
           "in": [
             {
               "items": {
@@ -75,14 +147,14 @@
               "$ref": "#/$defs/Bytes"
             },
             {
-              "$ref": "#/$defs/MinValue",
-              "pointer": true
+              "$ref": "#/$defs/MinValue"
             }
           ]
         },
         {
-          "string": "ComplexArguments",
+          "type": "go:func",
           "pointer": true,
+          "name": "ComplexArguments",
           "in": [
             {
               "items": {
@@ -99,41 +171,30 @@
               "type": "object"
             },
             {
-              "$ref": "#/$defs/OuterPtr",
-              "pointer": true
+              "$ref": "#/$defs/OuterPtr"
             }
           ]
         },
         {
-          "string": "MultiReturn",
+          "type": "go:func",
           "pointer": true,
+          "name": "MultiReturn",
           "out": [
             {
               "type": "integer"
             },
             {
-              "type": "boolean",
-              "pointer": true
+              "type": "boolean"
             },
             {
-              "methods": [
-                {
-                  "string": "Error",
-                  "pointer": true,
-                  "out": [
-                    {
-                      "type": "string"
-                    }
-                  ]
-                }
-              ],
-              "name": "error"
+              "$ref": "#/$defs/error"
             }
           ]
         },
         {
-          "string": "SimpleArguments",
+          "type": "go:func",
           "pointer": true,
+          "name": "SimpleArguments",
           "in": [
             {
               "type": "integer"
@@ -153,12 +214,14 @@
           ]
         },
         {
-          "string": "SimpleMethod",
-          "pointer": true
+          "type": "go:func",
+          "pointer": true,
+          "name": "SimpleMethod"
         },
         {
-          "string": "SingleReturn",
+          "type": "go:func",
           "pointer": true,
+          "name": "SingleReturn",
           "out": [
             {
               "type": "string"
@@ -166,9 +229,9 @@
           ]
         },
         {
-          "string": "VariadicArguments",
+          "type": "go:func",
           "pointer": true,
-          "variadic": true,
+          "name": "VariadicArguments",
           "in": [
             {
               "type": "integer"
@@ -179,13 +242,16 @@
               },
               "type": "array"
             }
-          ]
+          ],
+          "variadic": true
         },
         {
-          "string": "SimpleMethod"
+          "type": "go:func",
+          "name": "SimpleMethod"
         },
         {
-          "string": "SingleReturn",
+          "type": "go:func",
+          "name": "SingleReturn",
           "out": [
             {
               "type": "string"
@@ -227,6 +293,21 @@
       ],
       "package": "github.com/progrium/jsonschema",
       "name": "OuterPtr"
+    },
+    "error": {
+      "methods": [
+        {
+          "type": "go:func",
+          "pointer": true,
+          "name": "Error",
+          "out": [
+            {
+              "type": "string"
+            }
+          ]
+        }
+      ],
+      "name": "error"
     }
   },
   "pointer": true

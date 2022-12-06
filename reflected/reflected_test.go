@@ -1,6 +1,7 @@
 package reflected
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -17,13 +18,14 @@ type Subtype struct {
 }
 
 type Fooer interface {
-	Foo()
+	Foo(context.Context)
 }
 
 type ReflectedTest struct {
 	Field string
 	Sub   Subtype
 	Foo   Fooer
+	Func  func(int)
 }
 
 func (mt ReflectedTest) SimpleMethod() {}
@@ -69,5 +71,7 @@ func TestReflected(t *testing.T) {
 		}
 		fmt.Println(m.Name, args, rets)
 	}
-	//fmt.Println(tt.Field(2).Type.NumMethod())
+	schema = r.ReflectFromType(reflect.TypeOf(rt).Elem())
+	tt = TypeOf(schema)
+	fmt.Println(tt.Field(3).Type.In(0))
 }

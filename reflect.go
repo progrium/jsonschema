@@ -9,6 +9,7 @@ package jsonschema
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/url"
 	"reflect"
@@ -94,18 +95,13 @@ type Schema struct {
 	boolean *bool
 
 	// non-standard keywords
-	Methods []Method `json:"methods,omitempty"`
-	Pointer bool     `json:"pointer,omitempty"`
-	Package string   `json:"package,omitempty"`
-	Name    string   `json:"name,omitempty"`
-}
-
-type Method struct {
-	Name     string    `json:"string,omitempty"`
+	Methods  []*Schema `json:"methods,omitempty"`
 	Pointer  bool      `json:"pointer,omitempty"`
-	Variadic bool      `json:"variadic,omitempty"`
+	Package  string    `json:"package,omitempty"`
+	Name     string    `json:"name,omitempty"`
 	In       []*Schema `json:"in,omitempty"`
 	Out      []*Schema `json:"out,omitempty"`
+	Variadic bool      `json:"variadic,omitempty"`
 }
 
 var (
@@ -422,6 +418,7 @@ func (r *Reflector) reflectTypeToSchema(definitions Definitions, t reflect.Type)
 
 	case reflect.Interface:
 		if r.AnnotateMethods {
+			r.addDefinition(definitions, t, st)
 			r.reflectInterfaceMethods(st, definitions, t)
 		}
 
@@ -437,6 +434,13 @@ func (r *Reflector) reflectTypeToSchema(definitions Definitions, t reflect.Type)
 
 	case reflect.String:
 		st.Type = "string"
+
+	case reflect.Chan:
+		st.Type = fmt.Sprintf("go:%s", t.String())
+		//TODO
+
+	case reflect.Func:
+		r.reflectFunc(st, definitions, t)
 
 	default:
 		panic("unsupported type " + t.String())
@@ -606,7 +610,7 @@ func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.
 			return
 		}
 	}
-	method := Method{Name: m.Name, Pointer: ptrRcvr}
+	method := &Schema{Name: m.Name, Pointer: ptrRcvr, Type: "go:func"}
 	if m.Type.IsVariadic() {
 		method.Variadic = true
 	}
@@ -615,14 +619,29 @@ func (r *Reflector) reflectMethod(s *Schema, definitions Definitions, t reflect.
 		start = 0 // no receiver on interfaces
 	}
 	for i := start; i < m.Type.NumIn(); i++ {
-		arg := r.reflectTypeToSchema(definitions, m.Type.In(i))
+		arg := r.refOrReflectTypeToSchema(definitions, m.Type.In(i), false)
 		method.In = append(method.In, arg)
 	}
 	for i := 0; i < m.Type.NumOut(); i++ {
-		arg := r.reflectTypeToSchema(definitions, m.Type.Out(i))
+		arg := r.refOrReflectTypeToSchema(definitions, m.Type.Out(i), false)
 		method.Out = append(method.Out, arg)
 	}
 	s.Methods = append(s.Methods, method)
+}
+
+func (r *Reflector) reflectFunc(s *Schema, definitions Definitions, t reflect.Type) {
+	s.Type = "go:func"
+	if t.IsVariadic() {
+		s.Variadic = true
+	}
+	for i := 0; i < t.NumIn(); i++ {
+		arg := r.refOrReflectTypeToSchema(definitions, t.In(i), false)
+		s.In = append(s.In, arg)
+	}
+	for i := 0; i < t.NumOut(); i++ {
+		arg := r.refOrReflectTypeToSchema(definitions, t.Out(i), false)
+		s.Out = append(s.Out, arg)
+	}
 }
 
 func (r *Reflector) reflectStructFields(st *Schema, definitions Definitions, t reflect.Type) {

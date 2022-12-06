@@ -23,7 +23,7 @@ type StructField struct {
 type Type struct {
 	schema *jsonschema.Schema
 	defs   jsonschema.Definitions
-	method *jsonschema.Method
+	method *jsonschema.Schema
 }
 
 func resolve(s *jsonschema.Schema, defs jsonschema.Definitions) *jsonschema.Schema {
@@ -97,6 +97,8 @@ func (t Type) Kind() reflect.Kind {
 			return reflect.Map
 		}
 		return reflect.Struct
+	case "go:func":
+		return reflect.Func
 	default:
 		return reflect.Interface
 	}
@@ -112,7 +114,7 @@ func (t Type) PkgPath() string {
 
 func (t Type) IsVariadic() bool {
 	if t.method == nil {
-		return false
+		return t.schema.Variadic
 	}
 	return t.method.Variadic
 }
@@ -122,17 +124,23 @@ func (t Type) NumMethod() int {
 }
 
 func (t Type) NumIn() int {
-	if t.method.In == nil {
-		return 1
+	if t.method != nil {
+		if t.method.In == nil {
+			return 1
+		}
+		return len(t.method.In) + 1
 	}
-	return len(t.method.In) + 1
+	return len(t.schema.In)
 }
 
 func (t Type) NumOut() int {
-	if t.method.Out == nil {
-		return 0
+	if t.method != nil {
+		if t.method.Out == nil {
+			return 0
+		}
+		return len(t.method.Out)
 	}
-	return len(t.method.Out)
+	return len(t.schema.Out)
 }
 
 func (t Type) NumField() int {
@@ -143,11 +151,10 @@ func (t Type) NumField() int {
 }
 
 func (t Type) Method(i int) Method {
-	m := t.schema.Methods[i]
 	tt := typeFrom(t, indirect(t.schema))
-	tt.method = &m
+	tt.method = t.schema.Methods[i]
 	return Method{
-		Name:    m.Name,
+		Name:    tt.method.Name,
 		PkgPath: t.schema.Package,
 		Type:    tt,
 	}
@@ -181,14 +188,20 @@ func (t Type) FieldByName(name string) (StructField, bool) {
 }
 
 func (t Type) In(i int) Type {
-	if i == 0 {
-		return t
+	if t.method != nil {
+		if i == 0 {
+			return t
+		}
+		return typeFrom(t, t.method.In[i-1])
 	}
-	return typeFrom(t, t.method.In[i-1])
+	return typeFrom(t, t.schema.In[i])
 }
 
 func (t Type) Out(i int) Type {
-	return typeFrom(t, t.method.Out[i])
+	if t.method != nil {
+		return typeFrom(t, t.method.Out[i])
+	}
+	return typeFrom(t, t.schema.Out[i])
 }
 
 func (t Type) Key() Type {

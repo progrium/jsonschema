@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -548,12 +549,13 @@ func TestArrayFormat(t *testing.T) {
 }
 
 type InterfaceTest interface {
-	Do(string) string
+	Do(context.Context) string
 }
 
 type MethodTest struct {
 	Field     string
 	Interface InterfaceTest
+	Func      func(string) string
 }
 
 func (mt MethodTest) SimpleMethod() {}
